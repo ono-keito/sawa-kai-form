@@ -129,24 +129,34 @@
             timestamp: new Date().toISOString()
           };
 
+          console.log('Submitting data:', submitData);
+
           const response = await fetch(SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors',
             headers: {
-              'Content-Type': 'application/json',
+              'Content-Type': 'text/plain',
             },
             body: JSON.stringify(submitData)
           });
 
-          setFadeState('fade-out');
-          setTimeout(() => {
-            setCurrentStep(currentStep + 1);
-            setFadeState('fade-in');
-            setIsSubmitting(false);
-          }, 400);
+          console.log('Response status:', response.status);
+          const result = await response.json();
+          console.log('Response data:', result);
+          
+          if (result.success) {
+            setFadeState('fade-out');
+            setTimeout(() => {
+              setCurrentStep(currentStep + 1);
+              setFadeState('fade-in');
+              setIsSubmitting(false);
+            }, 400);
+          } else {
+            throw new Error(result.error || 'Submission failed');
+          }
           
         } catch (error) {
-          setSubmitError('There was an error submitting your response. Please try again.');
+          console.error('Submission error:', error);
+          setSubmitError(`There was an error submitting your response: ${error.message}. Please try again.`);
           setIsSubmitting(false);
         }
       };
@@ -501,9 +511,11 @@
                   ← Back
                 </button>
 
-                {submitError && (
-                  <p className="text-red-500 text-sm">{submitError}</p>
-                )}
+                <div className="flex-1 text-center">
+                  {submitError && (
+                    <p className="text-red-500 text-sm px-4">{submitError}</p>
+                  )}
+                </div>
 
                 {currentStep < questions.length - 1 && (
                   <button
