@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>茶話会 Sawa-Kai</title>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=Noto+Serif+JP:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Shippori Mincho', 'Noto Serif JP', serif;
+    }
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-20px) rotate(5deg);
+      }
+    }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    function SawaKaiForm() {
+      const [currentStep, setCurrentStep] = useState(0);
+      const [fadeState, setFadeState] = useState('fade-in');
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [submitError, setSubmitError] = useState('');
+      const [formData, setFormData] = useState({
+        name: '',
+        allergies: '',
+        allergiesOther: '',
+        date: '',
+        time: [],
+        timeOther: '',
+        questions: ''
+      });
+
+      // Replace this with your Google Apps Script Web App URL
+      const SCRIPT_URL = 'https://script.google.com/a/macros/columbia.edu/s/AKfycbz4fGlArDf8U_QZ2kXEKObVJYwVt67PAaY9BXvWpbtpRp8fSPjrWfC0GM0bOwqZLAC5bw/exec';
+
+      const questions = [
+        {
+          id: 'intro',
+          type: 'intro',
+          title: '茶話会',
+          subtitle: 'Sawa-Kai',
+          description: "It's been a busy week. Let's pause, sit, and share a cup of tea.\n\nWe'll share high-quality Japanese green tea and hojicha, carefully brought from Japan, in a small, relaxed gathering.\n(Tea selection may vary depending on availability.)\n\n—\n\nUsually Friday afternoon or Weekends\n(Date and Time may fluctuate depending on requests.)\n\nMaximum 3 people per session.\n\n* The 茶話会 will take place once at least two participants have signed up. As some time slots may fill quickly, invitations will be sent to those who are confirmed for the gathering."
+        },
+        {
+          id: 'name',
+          type: 'text',
+          question: 'Your Name',
+          required: true
+        },
+        {
+          id: 'allergies',
+          type: 'multiple',
+          question: 'Do you have any allergies?',
+          required: true,
+          options: ['No', 'Other']
+        },
+        {
+          id: 'date',
+          type: 'date',
+          question: 'Which date would you like to schedule?',
+          required: true
+        },
+        {
+          id: 'time',
+          type: 'checkbox',
+          question: 'What time works best for you?',
+          required: true,
+          options: [
+            '2:00 pm - 3:00 pm',
+            '3:00 pm - 4:00 pm',
+            '4:00 pm - 5:00 pm',
+            '5:00 pm - 6:00 pm',
+            '6:00 pm - 7:00 pm',
+            '7:00 pm - 8:00 pm',
+            '8:00 pm - 9:00 pm',
+            'Other'
+          ]
+        },
+        {
+          id: 'questions',
+          type: 'textarea',
+          question: 'Any Questions?',
+          required: false
+        },
+        {
+          id: 'summary',
+          type: 'summary'
+        }
+      ];
+
+      const submitToGoogleSheets = async () => {
+        setIsSubmitting(true);
+        setSubmitError('');
+        
+        try {
+          const submitData = {
+            name: formData.name,
+            allergies: formData.allergies === 'Other' ? `Other: ${formData.allergiesOther}` : formData.allergies,
+            date: formData.date,
+            time: formData.time.map(t => t === 'Other' && formData.timeOther ? formData.timeOther : t).join(', '),
+            questions: formData.questions,
+            timestamp: new Date().toISOString()
+          };
+
+          const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(submitData)
+          });
+
+          setFadeState('fade-out');
+          setTimeout(() => {
+            setCurrentStep(currentStep + 1);
+            setFadeState('fade-in');
+            setIsSubmitting(false);
+          }, 400);
+          
+        } catch (error) {
+          setSubmitError('There was an error submitting your response. Please try again.');
+          setIsSubmitting(false);
+        }
+      };
+
+      const handleNext = () => {
+        const current = questions[currentStep];
+        
+        if (current.required) {
+          if (current.id === 'name' && !formData.name.trim()) return;
+          if (current.id === 'allergies' && !formData.allergies) return;
+          if (current.id === 'date' && !formData.date) return;
+          if (current.id === 'time' && formData.time.length === 0) return;
+        }
+
+        if (currentStep === questions.length - 2) {
+          submitToGoogleSheets();
+        } else {
+          setFadeState('fade-out');
+          setTimeout(() => {
+            setCurrentStep(currentStep + 1);
+            setFadeState('fade-in');
+          }, 400);
+        }
+      };
+
+      const handleBack = () => {
+        setFadeState('fade-out');
+        setTimeout(() => {
+          setCurrentStep(currentStep - 1);
+          setFadeState('fade-in');
+        }, 400);
+      };
+
+      const updateFormData = (field, value) => {
+        setFormData({ ...formData, [field]: value });
+      };
+
+      const toggleCheckbox = (value) => {
+        const current = formData.time;
+        if (current.includes(value)) {
+          updateFormData('time', current.filter(t => t !== value));
+        } else {
+          updateFormData('time', [...current, value]);
+        }
+      };
+
+      const currentQuestion = questions[currentStep];
+
+      const renderQuestion = () => {
+        switch (currentQuestion.type) {
+          case 'intro':
+            return (
+              <div className="text-center max-w-2xl mx-auto relative">
+                <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
+                  <div className="absolute" style={{
+                    top: '10%',
+                    left: '15%',
+                    animation: 'float 8s ease-in-out infinite',
+                    opacity: 0.15
+                  }}>
+                    <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+                      <path d="M15 5C10 5 8 10 8 15C8 20 10 25 15 25C20 25 22 20 22 15C22 10 20 5 15 5Z" fill="#4A7C59"/>
+                    </svg>
+                  </div>
+                  <div className="absolute" style={{
+                    top: '60%',
+                    right: '10%',
+                    animation: 'float 10s ease-in-out infinite 2s',
+                    opacity: 0.12
+                  }}>
+                    <svg width="25" height="25" viewBox="0 0 30 30" fill="none">
+                      <path d="M15 5C10 5 8 10 8 15C8 20 10 25 15 25C20 25 22 20 22 15C22 10 20 5 15 5Z" fill="#4A7C59"/>
+                    </svg>
+                  </div>
+                  <div className="absolute" style={{
+                    top: '30%',
+                    right: '20%',
+                    animation: 'float 12s ease-in-out infinite 4s',
+                    opacity: 0.1
+                  }}>
+                    <svg width="20" height="20" viewBox="0 0 30 30" fill="none">
+                      <path d="M15 5C10 5 8 10 8 15C8 20 10 25 15 25C20 25 22 20 22 15C22 10 20 5 15 5Z" fill="#4A7C59"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="mb-12 relative" style={{ zIndex: 1 }}>
+                  <h1 className="text-7xl font-normal text-gray-800 mb-3 tracking-wider" style={{
+                    textShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                  }}>{currentQuestion.title}</h1>
+                  <h2 className="text-3xl font-light text-gray-500 mb-10 tracking-wide">{currentQuestion.subtitle}</h2>
+                  
+                  <div className="flex items-center justify-center gap-3 mb-10">
+                    <div className="w-12 h-px bg-gradient-to-r from-transparent to-gray-300"></div>
+                    <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                    <div className="w-24 h-px bg-gray-300"></div>
+                    <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                    <div className="w-12 h-px bg-gradient-to-l from-transparent to-gray-300"></div>
+                  </div>
+                </div>
+                
+                <div className="relative" style={{ zIndex: 1 }}>
+                  <p className="text-gray-700 leading-loose whitespace-pre-line text-left text-lg" style={{
+                    textShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                  }}>
+                    {currentQuestion.description.split('\n\n*')[0]}
+                  </p>
+                  {currentQuestion.description.includes('*') && (
+                    <p className="text-gray-600 leading-relaxed whitespace-pre-line text-left text-sm mt-6 italic" style={{
+                      textShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                    }}>
+                      * {currentQuestion.description.split('\n\n*')[1]}
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+
+          case 'text':
+            return (
+              <div className="max-w-md mx-auto">
+                <label className="block text-gray-700 text-lg font-light mb-6">
+                  {currentQuestion.question}
+                  {currentQuestion.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => updateFormData('name', e.target.value)}
+                  className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 focus:border-gray-400 focus:outline-none text-gray-700 bg-transparent transition-colors"
+                  placeholder="Enter your name"
+                  autoFocus
+                />
+              </div>
+            );
+
+          case 'multiple':
+            return (
+              <div className="max-w-md mx-auto">
+                <label className="block text-gray-700 text-lg font-light mb-6">
+                  {currentQuestion.question}
+                  {currentQuestion.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                <div className="space-y-4">
+                  {currentQuestion.options.map((option) => (
+                    <div key={option}>
+                      <label className="flex items-start cursor-pointer group">
+                        <input
+                          type="radio"
+                          name="allergies"
+                          value={option}
+                          checked={formData.allergies === option}
+                          onChange={(e) => updateFormData('allergies', e.target.value)}
+                          className="mt-1 w-4 h-4 text-gray-600 border-gray-300"
+                        />
+                        <span className="ml-3 text-gray-700 group-hover:text-gray-900 transition-colors">
+                          {option}
+                        </span>
+                      </label>
+                      {option === 'Other' && formData.allergies === 'Other' && (
+                        <input
+                          type="text"
+                          value={formData.allergiesOther}
+                          onChange={(e) => updateFormData('allergiesOther', e.target.value)}
+                          className="w-full mt-2 ml-7 px-0 py-2 border-0 border-b border-gray-200 focus:border-gray-400 focus:outline-none text-gray-700 bg-transparent"
+                          placeholder="Please specify"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+
+          case 'date':
+            return (
+              <div className="max-w-md mx-auto">
+                <label className="block text-gray-700 text-lg font-light mb-6">
+                  {currentQuestion.question}
+                  {currentQuestion.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => updateFormData('date', e.target.value)}
+                  className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 focus:border-gray-400 focus:outline-none text-gray-700 bg-transparent transition-colors"
+                />
+              </div>
+            );
+
+          case 'checkbox':
+            return (
+              <div className="max-w-md mx-auto">
+                <label className="block text-gray-700 text-lg font-light mb-6">
+                  {currentQuestion.question}
+                  {currentQuestion.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                <div className="space-y-4">
+                  {currentQuestion.options.map((option) => (
+                    <div key={option}>
+                      <label className="flex items-start cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={formData.time.includes(option)}
+                          onChange={() => toggleCheckbox(option)}
+                          className="mt-1 w-4 h-4 text-gray-600 border-gray-300 rounded"
+                        />
+                        <span className="ml-3 text-gray-700 group-hover:text-gray-900 transition-colors">
+                          {option}
+                        </span>
+                      </label>
+                      {option === 'Other' && formData.time.includes('Other') && (
+                        <input
+                          type="text"
+                          value={formData.timeOther}
+                          onChange={(e) => updateFormData('timeOther', e.target.value)}
+                          className="w-full mt-2 ml-7 px-0 py-2 border-0 border-b border-gray-200 focus:border-gray-400 focus:outline-none text-gray-700 bg-transparent"
+                          placeholder="Please specify time"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+
+          case 'textarea':
+            return (
+              <div className="max-w-md mx-auto">
+                <label className="block text-gray-700 text-lg font-light mb-6">
+                  {currentQuestion.question}
+                </label>
+                <textarea
+                  value={formData.questions}
+                  onChange={(e) => updateFormData('questions', e.target.value)}
+                  rows="5"
+                  className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 focus:border-gray-400 focus:outline-none text-gray-700 bg-transparent transition-colors resize-none"
+                  placeholder="Share your thoughts..."
+                />
+              </div>
+            );
+
+          case 'summary':
+            return (
+              <div className="max-w-2xl mx-auto">
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl font-light text-gray-800 mb-2">ありがとうございます</h2>
+                  <p className="text-gray-500">Thank you for your submission</p>
+                  <div className="w-16 h-px bg-gray-300 mx-auto mt-6"></div>
+                </div>
+                
+                <div className="space-y-6 bg-gray-50 p-8 rounded-sm">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Name</p>
+                    <p className="text-gray-800">{formData.name}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Allergies</p>
+                    <p className="text-gray-800">
+                      {formData.allergies}
+                      {formData.allergies === 'Other' && formData.allergiesOther && `: ${formData.allergiesOther}`}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Preferred Date</p>
+                    <p className="text-gray-800">{formData.date}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Preferred Time</p>
+                    <p className="text-gray-800">
+                      {formData.time.map(t => 
+                        t === 'Other' && formData.timeOther ? formData.timeOther : t
+                      ).join(', ')}
+                    </p>
+                  </div>
+                  
+                  {formData.questions && (
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Questions</p>
+                      <p className="text-gray-800">{formData.questions}</p>
+                    </div>
+                  )}
+                </div>
+                
+                <p className="text-center text-gray-500 text-sm mt-8">
+                  Please save this information or take a screenshot for your records.
+                </p>
+              </div>
+            );
+
+          default:
+            return null;
+        }
+      };
+
+      const canProceed = () => {
+        const current = questions[currentStep];
+        if (!current.required) return true;
+        
+        if (current.id === 'name') return formData.name.trim();
+        if (current.id === 'allergies') return formData.allergies;
+        if (current.id === 'date') return formData.date;
+        if (current.id === 'time') return formData.time.length > 0;
+        
+        return true;
+      };
+
+      return (
+        <div className="min-h-screen bg-white flex items-center justify-center p-6 relative overflow-hidden" style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}>
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+            backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, #4A7C59 10px, #4A7C59 11px)`
+          }}></div>
+          
+          <div className="w-full max-w-4xl">
+            {currentStep > 0 && currentStep < questions.length - 1 && (
+              <div className="mb-8">
+                <div className="flex justify-center space-x-2">
+                  {questions.slice(1, -1).map((_, index) => (
+                    <div
+                      key={index}
+                      className={`h-1 rounded-full transition-all duration-500 ${
+                        index + 1 <= currentStep ? 'w-8 bg-gray-400' : 'w-8 bg-gray-200'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div
+              className={`bg-white rounded-sm shadow-lg p-12 min-h-[500px] flex flex-col justify-center transition-opacity duration-400 relative ${
+                fadeState === 'fade-in' ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{
+                animation: fadeState === 'fade-in' ? 'fadeIn 0.6s ease-out' : 'none',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08), 0 0 1px rgba(0,0,0,0.1)'
+              }}
+            >
+              {renderQuestion()}
+
+              <div className="flex justify-between items-center mt-12 max-w-2xl mx-auto w-full">
+                <button
+                  onClick={handleBack}
+                  disabled={currentStep === 0 || isSubmitting}
+                  className={`px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors ${
+                    currentStep === 0 ? 'invisible' : ''
+                  }`}
+                >
+                  ← Back
+                </button>
+
+                {submitError && (
+                  <p className="text-red-500 text-sm">{submitError}</p>
+                )}
+
+                {currentStep < questions.length - 1 && (
+                  <button
+                    onClick={handleNext}
+                    disabled={!canProceed() || isSubmitting}
+                    className={`px-8 py-3 rounded-sm transition-all ${
+                      canProceed() && !isSubmitting
+                        ? 'bg-gray-800 text-white hover:bg-gray-700'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    {isSubmitting ? 'Submitting...' : currentStep === 0 ? 'Begin' : currentStep === questions.length - 2 ? 'Submit' : 'Next'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<SawaKaiForm />, document.getElementById('root'));
+  </script>
+</body>
+</html>
