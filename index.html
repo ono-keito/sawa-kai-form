@@ -49,6 +49,7 @@
       const [submitError, setSubmitError] = useState('');
       const [formData, setFormData] = useState({
         name: '',
+        email: '',
         allergies: '',
         allergiesOther: '',
         date: '',
@@ -71,6 +72,12 @@
           id: 'name',
           type: 'text',
           question: 'Your Name',
+          required: true
+        },
+        {
+          id: 'email',
+          type: 'email',
+          question: 'Email Address',
           required: true
         },
         {
@@ -121,6 +128,7 @@
         try {
           const submitData = {
             name: formData.name,
+            email: formData.email,
             allergies: formData.allergies === 'Other' ? `Other: ${formData.allergiesOther}` : formData.allergies,
             date: formData.date,
             time: formData.time.map(t => t === 'Other' && formData.timeOther ? formData.timeOther : t).join(', '),
@@ -180,6 +188,7 @@
         
         if (current.required) {
           if (current.id === 'name' && !formData.name.trim()) return;
+          if (current.id === 'email' && !formData.email.trim()) return;
           if (current.id === 'allergies' && !formData.allergies) return;
           if (current.id === 'date' && !formData.date) return;
           if (current.id === 'time' && formData.time.length === 0) return;
@@ -307,6 +316,24 @@
               </div>
             );
 
+          case 'email':
+            return (
+              <div className="max-w-md mx-auto">
+                <label className="block text-gray-700 text-lg font-light mb-6">
+                  {currentQuestion.question}
+                  {currentQuestion.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => updateFormData('email', e.target.value)}
+                  className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 focus:border-gray-400 focus:outline-none text-gray-700 bg-transparent transition-colors"
+                  placeholder="your.email@example.com"
+                  autoFocus
+                />
+              </div>
+            );
+
           case 'multiple':
             return (
               <div className="max-w-md mx-auto">
@@ -429,6 +456,11 @@
                   </div>
                   
                   <div>
+                    <p className="text-sm text-gray-500 mb-1">Email</p>
+                    <p className="text-gray-800">{formData.email}</p>
+                  </div>
+                  
+                  <div>
                     <p className="text-sm text-gray-500 mb-1">Allergies</p>
                     <p className="text-gray-800">
                       {formData.allergies}
@@ -474,6 +506,7 @@
         if (!current.required) return true;
         
         if (current.id === 'name') return formData.name.trim();
+        if (current.id === 'email') return formData.email.trim() && formData.email.includes('@');
         if (current.id === 'allergies') return formData.allergies;
         if (current.id === 'date') return formData.date;
         if (current.id === 'time') return formData.time.length > 0;
@@ -515,34 +548,61 @@
               {renderQuestion()}
 
               <div className="flex justify-between items-center mt-12 max-w-2xl mx-auto w-full">
-                <button
-                  onClick={handleBack}
-                  disabled={currentStep === 0 || isSubmitting}
-                  className={`px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors ${
-                    currentStep === 0 ? 'invisible' : ''
-                  }`}
-                >
-                  ← Back
-                </button>
-
-                <div className="flex-1 text-center">
-                  {submitError && (
-                    <p className="text-red-500 text-sm px-4">{submitError}</p>
-                  )}
-                </div>
-
-                {currentStep < questions.length - 1 && (
+                {currentStep === questions.length - 1 ? (
                   <button
-                    onClick={handleNext}
-                    disabled={!canProceed() || isSubmitting}
-                    className={`px-8 py-3 rounded-sm transition-all ${
-                      canProceed() && !isSubmitting
-                        ? 'bg-gray-800 text-white hover:bg-gray-700'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
+                    onClick={() => {
+                      setFadeState('fade-out');
+                      setTimeout(() => {
+                        setCurrentStep(0);
+                        setFormData({
+                          name: '',
+                          email: '',
+                          allergies: '',
+                          allergiesOther: '',
+                          date: '',
+                          time: [],
+                          timeOther: '',
+                          questions: ''
+                        });
+                        setFadeState('fade-in');
+                      }, 400);
+                    }}
+                    className="mx-auto px-8 py-3 bg-gray-800 text-white hover:bg-gray-700 rounded-sm transition-all"
                   >
-                    {isSubmitting ? 'Submitting...' : currentStep === 0 ? 'Begin' : currentStep === questions.length - 2 ? 'Submit' : 'Next'}
+                    ← Top
                   </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleBack}
+                      disabled={currentStep === 0 || isSubmitting}
+                      className={`px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors ${
+                        currentStep === 0 ? 'invisible' : ''
+                      }`}
+                    >
+                      ← Back
+                    </button>
+
+                    <div className="flex-1 text-center">
+                      {submitError && (
+                        <p className="text-red-500 text-sm px-4">{submitError}</p>
+                      )}
+                    </div>
+
+                    {currentStep < questions.length - 1 && (
+                      <button
+                        onClick={handleNext}
+                        disabled={!canProceed() || isSubmitting}
+                        className={`px-8 py-3 rounded-sm transition-all ${
+                          canProceed() && !isSubmitting
+                            ? 'bg-gray-800 text-white hover:bg-gray-700'
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        {isSubmitting ? 'Submitting...' : currentStep === 0 ? 'Begin' : currentStep === questions.length - 2 ? 'Submit' : 'Next'}
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
