@@ -57,8 +57,7 @@
         questions: ''
       });
 
-      // Replace this with your Google Apps Script Web App URL
-      const SCRIPT_URL = 'https://script.google.com/a/macros/columbia.edu/s/AKfycbzNk0PiW5zo9Bup4yWpkHh7lqK23p7fSRr4c3kbe-pXBf9VC9FWvAJ1kT0qK3dgVkSd/exec';
+      const SCRIPT_URL = 'https://script.google.com/a/macros/columbia.edu/s/AKfycbwFnoj6oE61r0AFHzet-a5ExgvoqisSzA71ZoRV9hyyPOKRuNU1hrsfQKT5pQc7uZzW/exec';
 
       const questions = [
         {
@@ -130,8 +129,10 @@
           };
 
           console.log('Submitting data:', submitData);
+          console.log('Sending to URL:', SCRIPT_URL);
 
           const response = await fetch(SCRIPT_URL, {
+            redirect: 'follow',
             method: 'POST',
             headers: {
               'Content-Type': 'text/plain',
@@ -140,10 +141,23 @@
           });
 
           console.log('Response status:', response.status);
-          const result = await response.json();
-          console.log('Response data:', result);
+          console.log('Response ok:', response.ok);
+          
+          const responseText = await response.text();
+          console.log('Response text:', responseText);
+          
+          let result;
+          try {
+            result = JSON.parse(responseText);
+          } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            throw new Error('Invalid response from server. Please check if the Google Apps Script is properly deployed.');
+          }
+          
+          console.log('Parsed result:', result);
           
           if (result.success) {
+            console.log('Submission successful!');
             setFadeState('fade-out');
             setTimeout(() => {
               setCurrentStep(currentStep + 1);
@@ -151,12 +165,12 @@
               setIsSubmitting(false);
             }, 400);
           } else {
-            throw new Error(result.error || 'Submission failed');
+            throw new Error(result.error || 'Submission failed - no success flag in response');
           }
           
         } catch (error) {
           console.error('Submission error:', error);
-          setSubmitError(`There was an error submitting your response: ${error.message}. Please try again.`);
+          setSubmitError(`Submission failed: ${error.message}. Please check the browser console for details.`);
           setIsSubmitting(false);
         }
       };
