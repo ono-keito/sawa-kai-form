@@ -674,7 +674,7 @@
           }}></div>
           
           <div className="w-full max-w-4xl">
-            {currentStep > 0 && currentStep < questions.length - 1 && (
+            {currentStep < questions.length - 1 && (
               <div className="mb-8 flex justify-between items-center">
                 <button
                   onClick={() => onBack()}
@@ -682,16 +682,18 @@
                 >
                   ← Home
                 </button>
-                <div className="flex justify-center space-x-2 flex-1">
-                  {questions.slice(1, -1).map((_, index) => (
-                    <div
-                      key={index}
-                      className={`h-1 rounded-full transition-all duration-500 ${
-                        index + 1 <= currentStep ? 'w-8 bg-gray-400' : 'w-8 bg-gray-200'
-                      }`}
-                    />
-                  ))}
-                </div>
+                {currentStep > 0 && (
+                  <div className="flex justify-center space-x-2 flex-1">
+                    {questions.slice(1, -1).map((_, index) => (
+                      <div
+                        key={index}
+                        className={`h-1 rounded-full transition-all duration-500 ${
+                          index + 1 <= currentStep ? 'w-8 bg-gray-400' : 'w-8 bg-gray-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
