@@ -101,12 +101,7 @@
           </div>
 
           <div className="relative z-10 text-center max-w-md">
-            <h1 className="text-6xl sm:text-7xl font-light text-gray-800 mb-2 tracking-wider" style={{
-              textShadow: '0 2px 4px rgba(0,0,0,0.05)'
-            }}>
-              ono3.io
-            </h1>
-            <div className="flex items-center justify-center gap-3 mb-12 mt-8">
+            <div className="flex items-center justify-center gap-3 mb-12">
               <div className="w-12 h-px bg-gradient-to-r from-transparent to-gray-300"></div>
               <div className="w-2 h-2 rounded-full bg-gray-300"></div>
               <div className="w-24 h-px bg-gray-300"></div>
@@ -114,15 +109,15 @@
               <div className="w-12 h-px bg-gradient-to-l from-transparent to-gray-300"></div>
             </div>
             
-            <p className="text-gray-600 text-lg mb-12 leading-relaxed">
-              Welcome
+            <p className="text-gray-700 text-lg mb-12 leading-relaxed">
+              It's been a busy week. Let's pause, sit, and take a moment to breathe.
             </p>
 
             <button
               onClick={() => onNavigate('password')}
               className="w-full px-8 py-4 bg-gray-800 text-white hover:bg-gray-700 rounded-sm transition-all text-lg font-light tracking-wide"
             >
-              Tea Session
+              RSVP Tea Session
             </button>
           </div>
         </div>
@@ -302,7 +297,8 @@
             date: formData.date,
             time: formData.time.map(t => t === 'Other' && formData.timeOther ? formData.timeOther : t).join(', '),
             questions: formData.questions,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            adminEmail: 'keitonofilm@gmail.com'
           };
 
           const response = await fetch(SCRIPT_URL, {
@@ -679,8 +675,14 @@
           
           <div className="w-full max-w-4xl">
             {currentStep > 0 && currentStep < questions.length - 1 && (
-              <div className="mb-8">
-                <div className="flex justify-center space-x-2">
+              <div className="mb-8 flex justify-between items-center">
+                <button
+                  onClick={() => onBack()}
+                  className="text-gray-500 hover:text-gray-700 text-sm transition-colors"
+                >
+                  ← Home
+                </button>
+                <div className="flex justify-center space-x-2 flex-1">
                   {questions.slice(1, -1).map((_, index) => (
                     <div
                       key={index}
